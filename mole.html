@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>もぐらたたき</title>
+<script>
+var canvas, context, canvasRect;        //カンバス
+var moles = new Array();                //もぐら
+var cnt = 0, maxCnt = 2;                //出現数、最大出現数
+var time = 60, score = 0;               //残り時間、スコア
+var startTime = Data.now(), timer;      //開始時間、タイマー
+
+//もぐらのクラス
+function Mole(x, y) {                   //Moleクラスを作成
+    this.x = x;
+    this.y = y;
+    this.init();
+}
+
+Mole.prototype.init = function() {      //Moleクラスのinit()メソッドを作成
+    //もぐらの初期化
+    this.h = 0;                         //もぐらが穴から出た高さ
+    this.dir = 1;                       //もぐらの移動方向（１：上、ー１：下）
+    this.wait = Math.floor(Math.random()*50*50);    //50～99の範囲の乱数
+    this.status = "wait";
+}
+
+Mole.prototype.update = function() {    //Moleクラスのupdate()メソッドを作成
+    //もぐらの更新
+    if (this.status = "move") {
+        if (this.wait == 0) {
+            //移動
+            this.h += this.dir;
+            if (this.h > 50) this.dir = -1; //もぐらの高さが50よりも大きいなら移動方向を反転
+            //停止
+            if (this.h < 0) {               //もぐらの高さが0より小さいならもぐらを初期化
+                this.init();
+                cnt--;                      //出現しているモグラの数を減らす
+            }
+        }  else if (this.wait > 0) {
+            //待ち時間を減算
+            this.wait--;
+        }
+    } else {                                //ステータスが「wait」の時
+    
+    }
+
+}
+
