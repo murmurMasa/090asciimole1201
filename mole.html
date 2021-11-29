@@ -8,7 +8,7 @@ var canvas, context, canvasRect;        //カンバス
 var moles = new Array();                //もぐら
 var cnt = 0, maxCnt = 2;                //出現数、最大出現数
 var time = 60, score = 0;               //残り時間、スコア
-var startTime = Data.now(), timer;      //開始時間、タイマー
+var startTime = Date.now(), timer;      //開始時間、タイマー
 
 //もぐらのクラス
 function Mole(x, y) {                   //Moleクラスを作成
@@ -42,8 +42,142 @@ Mole.prototype.update = function() {    //Moleクラスのupdate()メソッド�
             this.wait--;
         }
     } else {                                //ステータスが「wait」の時
-    
+        if (cnt < maxCnt) {                 //出現しているもぐらの数が最大出現数より小さいなら
+            //もぐら出現
+            if (Math.random() < 0.1) {      //10分の1の確率でもぐら出現
+               this.status = "move";
+               cnt++;
+            }
+        }
     }
-
+    //描画
+    this.draw();
 }
 
+Mole.prototype.draw = function() {          //Moleクラスのdraw()メソッドを作成
+    //もぐらの描画
+    drawCircle(this.x+40, this.y-this.h+10, 30, Math.PI, 0, "#996633"); //もぐらの色は茶色
+    context.fillStyle = "#996633";
+    context.fillRect(this.x+10, this.y-this.h+10, 60, this.h);
+    drawCircle(this.x+30, this.y-this.h, 2, 0, 2*Math.PI, "#000000");   //もぐらの目は黒
+    drawCircle(this.x+50, this.y-this.h, 2, 0, 2*Math.PI, "#000000");   //もぐらの目は黒
+    drawCircle(this.x+40, this.y-this.h+15, 10, 0, 2*Math.PI, "#FFFFFF");   //もぐらの口は白
+    drawCircle(this.x+40, this.y-this.h+10, 4, 0, 2*Math.PI, "#000000");   //もぐらの鼻は黒
+}
+
+Mole.prototype.hit = function(x, y) {           //Moleクラスのhit()メソッドを作成
+    //もぐらが叩かれた
+    if (this.h > 0) {                           //もぐらが出現中のとき
+       if ((this.x+10 < x) && (x < this.x + 70)
+          && (this.y-this.h-20 < y) && (y < this.y+10)) {       //マウスカーソルがもぐらの画像の範囲内のとき
+          //ヒット
+          score += 100;
+          this.init();
+          cnt--;
+        }
+    }
+}
+
+function drawCircle(x, y, r, sAngle, eAngle, color) {
+    //塗りつぶし円、扇形の描画
+    context.fillStyle = color;
+    context.beginPath();
+    context.arc(x, y, r, sAngle, eAngle);               //角度sAngleからeAngleまでの扇形または円を描く
+    context.closePath();
+    context.fill();
+}
+
+function init() {
+    //キャンバスの取得
+    canvas = document.getElementById("game");           //キャンバスのID
+    context = canvas.getContext("2d");                  //キャンバスの描画機能を有効にする
+    //キャンバスの絶対座標を取得
+    canvasRect = canvas.getBoundingClientRect();
+
+    //もぐらの生成
+    for(var i=0; i<4; i++) {                            //3X4=12個のもぐらを生成
+       for (var j=0; j<3; j++) {
+           moles.push(new Mole(40+160*i, 120+130*j));
+       }
+    }
+    //初期描画
+    initGame();
+    game();
+}
+
+function initGame() {
+    //ゲームの初期化
+    for (var i=0; i<moles.length; i++) moles[i].init();     //配列moles[]の要素数（＝12個）
+    cnt = 0;
+    maxCnt = 2;
+    score = 0;
+}
+
+function game() {
+    //キャンバスのクリア
+    context.clearRect(0, 0, canvas.width, canvas.height);   //キャンバスの横幅、高さ
+    //もぐらの更新
+    for (var i=0; i<moles.length; i++) {
+        moles[i].update();
+    }
+    //穴の描画
+    context.fillStyle = "#666633";                          //穴（地面）の色は、濃い黄土色
+    for (var i=0; i<4; i++) {
+        for (var j=0; j<3; j++) {
+            context.fillRect(40+160*i, 120+130*j, 80, 30);      //80×30ピクセルの矩形を描く
+        }
+    }
+    //残り時間処理
+    time = Math.floor(60 - (Date.now() - startTime)/1000);     //スタートからの経過時間（ミリ秒）
+    if (time == 0) {
+        //ゲーム終了
+        clearInterval(timer);                                   //タイマーID
+        document.getElementById("start").disabled = false;      //「スタート」ボタンID
+        document.getElementById("status").innerHTML = "ゲーム終了！";   //ステータス表示エリアのID
+    } else {
+        //出現数の増加
+        if(time < 40) maxCnt = 3;       //残り時間に応じてもぐらの最大出現数を増やす
+        if(time < 30) maxCnt = 5;
+        if(time < 20) maxCnt = 7;
+        if(time < 10) maxCnt = 9;
+    }
+    //残り時間、スコアの表示
+    document.getElementById("time").innerHTML = time;       //残り時間表示エリアのID
+    document.getElementById("score").innerHTML = score;     //スコア表示エリアのID
+}
+
+function startGame() {
+    //ゲーム開始
+    initGame();
+    startTime = Date.now();         //現在時刻を保存
+    timer = setInterval(game, 20);   //20ミリ秒ごとにgame()関数を実行
+    document.getElementById("start").disabled = true;
+    document.getElementById("status").innerHTML = "";
+}
+
+function hitMole(event) {
+    //座標を取得
+    var x = event.clientX - canvasRect.left;        //キャンバス内のマウスカーソルの位置を取得
+    var y = event.clientY - canvasRect.top;
+    //もぐらを叩く
+    for (var i=0; i<moles.length; i++) moles[i].hit(x, y);
+}
+</script>
+<style>
+canvas {background-color: #33CC66;}
+#status {color: #CC0000;}
+</style>
+</head>
+<body onload = "init()">
+<p>もぐらたたき</p>
+<div>
+<input type="button" id="start" value="スタート" onclick="startGame()">
+残り時間：<span id="time"></span>秒
+スコア：<span id="score"></span>
+<span id="status"></span> 
+</div>
+<hr>
+<canvas id="game" width="640" height="480" onmousedown="hitMole(event)">
+</canvas>
+</body>
+</html>
